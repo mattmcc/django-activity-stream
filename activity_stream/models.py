@@ -18,6 +18,10 @@ except:
 
 import base64
 
+# settings used by the app
+ACTIVITY_DEFAULT_BATCH_TIME = getattr(settings, "ACTIVITY_DEFAULT_BATCH_TIME",
+                                      30)
+
 class SerializedDataField(models.TextField):
     """Because Django for some reason feels its needed to repeatedly call
     to_python even after it's been converted this does not support strings."""
@@ -90,12 +94,13 @@ class ActivityStreamItem(models.Model):
             'id': self.id
     })
 
-    def render(self):
+    def render(self, context):
         from django.template.loader import get_template
         from django.template import Template
         from django.template import Context
         t = get_template('activity_stream/%s/full%s.html'%(self.type.name,self.get_batch_suffix()))
-        html = t.render(Context({'activity_item': self}))
+        html = t.render(Context({'activity_item': self,
+                'request': context.get('request')}))
         return html
     get_absolute_url = models.permalink(get_absolute_url)
     
@@ -135,7 +140,7 @@ def get_people_i_follow(user, count=20, offset=0):
 
 def get_my_followers(user, count=20, offset=0):
     if hasattr(settings, "ACTIVITY_GET_MY_FOLLOWERS"):
-        return settings.ACTIVITY_GET_PEOPLE_I_FOLLOW(user)
+        return settings.ACTIVITY_GET_MY_FOLLOWERS(user)
     else:
         followers = ActivityFollower.objects.filter(to_user=user).all()[offset:count]
         return [follower.from_user for follower in followers]
@@ -147,10 +152,7 @@ def create_activity_item(type, user, subject, data=None, safetylevel=1, custom_d
         # see if one exists in timeframe
         batch_minutes = type.batch_time_minutes
         if not batch_minutes:
-            if hasattr(settings, "ACTIVITY_DEFAULT_BATCH_TIME"):
-                batch_minutes = settings.ACTIVITY_DEFAULT_BATCH_TIME
-            else:
-                batch_minutes = 30
+            batch_minutes = ACTIVITY_DEFAULT_BATCH_TIME
 
         cutoff_time = datetime.now()-timedelta(minutes=batch_minutes)
         batchable_items = ActivityStreamItem.objects.filter(actor=user, type=type,
@@ -167,8 +169,7 @@ def create_activity_item(type, user, subject, data=None, safetylevel=1, custom_d
     
     if custom_date:
         new_item.created_at = custom_date
-        
-    new_item.save() 
+        new_item.save() 
     return new_item
 
     
