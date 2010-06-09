@@ -63,8 +63,7 @@ def global_activity_stream(context, count=20, offset=0, privacylevel=0):
 class RenderActivityNode(Node):
     def __init__(self, activity):
         self.activity = activity
-        print self.activity
-    
+
     def render(self, context):
         activity = context[self.activity]
         return activity.render(context)
