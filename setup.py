@@ -1,5 +1,5 @@
-
 from distutils.core import setup
+from setuptools import find_packages
 
 """ django-activity-stream instalation script """
 setup(
@@ -10,6 +10,7 @@ setup(
     url='http://github.com/philippWassibauer/django-activity-stream',
     download_url='http://github.com/philippWassibauer/django-activity-stream/tarball/master',
     license='MIT',
+    packages=find_packages(),
     version = __import__('activity_stream').__version__,
     classifiers=[
         'Development Status :: 3 - Alpha',
